@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  application:
+    image: spring-application-template:latest
+    #image: ghr.io/kostakoff/spring-application-template:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    environment:
+      spring_profiles_active: docker
+    networks:
+      - docker-compose-network
+
+networks:
+  docker-compose-network:
+    ipam:
+      config:
+        - subnet: 172.16.16.0/24
