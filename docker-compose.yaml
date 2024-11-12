@@ -2,7 +2,7 @@ version: '3.8'
 services:
   application:
     image: spring-application-template:latest
-    #image: ghr.io/kostakoff/spring-application-template:latest
+    #image: ghcr.io/kostakoff/spring-application-template:latest
     build:
       context: ./
       dockerfile: Dockerfile
