@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullName" . }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: '{{ include "app.fullName" . }}'
+      release: {{ .Release.Name | quote }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "chart.labels" . | nindent 8 }}
+        app: {{ include "app.fullName" . }}
+        chart: {{ template "app.chart" . }}
+        release: {{ .Release.Name | quote }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+{{- if .Values.images.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.images.pullSecret }}
+{{- end }}
+      serviceAccountName: {{ .Values.accountName }}
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: secret-volume
+          emptyDir:
+            medium: Memory
+        - name: app-config
+          configMap:
+            name: {{ include "app.fullName" . }}-profile
+        - name: app-secret-config
+          secret:
+            secretName: {{ include "app.fullName" . }}
+        - name: nginx-config
+          configMap:
+            name: {{ include "app.fullName" . }}-nginx
+        - name: service-cert-secret
+          secret:
+            defaultMode: 420
+            secretName: {{ include "app.fullName" . }}-service-cert
+        - name: app-keystore
+          secret:
+            secretName: {{ include "app.fullName" . }}-keystore
+## containers block
+      containers:
+      - name: nginx-proxy
+        image: {{ include "nginxproxy.image" . }}:{{ .Values.images.nginxproxy.imageTag }}
+        imagePullPolicy: Always
+        command:
+          - nginx
+          - -g
+          - daemon off;
+        ports:
+        - containerPort: 8443
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /health
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        resources:
+          requests:
+            memory: '{{ .Values.supportservices.nginxproxy.resources.requests.memory }}'
+            cpu: '{{ .Values.supportservices.nginxproxy.resources.requests.cpu }}'
+          limits:
+            memory: '{{ .Values.supportservices.nginxproxy.resources.limits.memory }}'
+            cpu: '{{ .Values.supportservices.nginxproxy.resources.limits.cpu }}'
+        volumeMounts:
+          - name: nginx-config
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+          - name: service-cert-secret
+            mountPath: /etc/pki/private
+### app
+      - name: {{ .Values.applicationName }}
+        env:
+          - name: TZ
+            value: Etc/Greenwich
+          - name: LANG
+            value: C.UTF-8
+        envFrom:
+          - configMapRef:
+              name: {{ include "app.fullName" . }}
+        image: {{ include "app.image" . }}:{{ .Values.images.app.imageTag | default .Chart.AppVersion }}
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 20
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        resources:
+          requests:
+            memory: '{{ .Values.app.resources.requests.memory }}'
+            cpu: '{{ .Values.app.resources.requests.cpu }}'
+          limits:
+            memory: '{{ .Values.app.resources.limits.memory }}'
+            cpu: '{{ .Values.app.resources.limits.cpu }}'
+        volumeMounts:
+          - name: data
+            mountPath: /data
+          - name: secret-volume
+            mountPath: /etc/secrets
+          - name: app-config
+            mountPath: /app/application-kube.yml
+            subPath: application-kube.yml
+            readOnly: true
+          - name: app-secret-config
+            mountPath: /etc/secrets/secrets.properties
+            subPath: secrets.properties
+          - name: app-secret-config
+            mountPath: /etc/secrets/jsec-opts.txt
+            subPath: jsec-opts.txt
+          - name: app-keystore
+            mountPath: /etc/secrets/keystore
+        terminationMessagePath: FallbackToLogsOnError

@@ -1,0 +1,21 @@
+{{- if .Values.supportservices.monitoring.prometheusEnabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "app.fullName" . }}
+  labels:
+    project: {{ include "app.fullName" . }}
+    service_monitor: {{ include "app.fullName" . }}
+spec:
+  endpoints:
+    - interval: 30s
+      path: /actuator/prometheus
+      port: tcp-8443-app
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+  selector:
+    matchLabels:
+      project: {{ include "app.fullName" . }}
+      prometheus: enabled
+{{- end }}

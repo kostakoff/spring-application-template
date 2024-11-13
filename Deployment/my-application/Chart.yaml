@@ -1,0 +1,14 @@
+apiVersion: v2
+name: my-application
+appVersion: 1.0.1 #__REPLACEAPPVERSION__
+description: A Helm chart to deploy any java application
+type: application
+version: 1.0.1 #__REPLACEAPPVERSION__
+
+keywords:
+  - application
+
+engine: gotpl
+
+maintainers:
+  - name: kostakoff

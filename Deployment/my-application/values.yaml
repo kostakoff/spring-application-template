@@ -1,0 +1,63 @@
+projectName: my
+applicationName: application
+appNamespace: applications
+k8sCluster: k8s.localhost
+
+replicas: 1
+accountName: default
+
+app:
+  javaOpts: '-Djdk.tls.client.protocols=TLSv1.2 -XX:MinRAMPercentage=80 -XX:MaxRAMPercentage=90'
+  debug:
+    enabled: false
+    settings: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+  server:
+    ingressEnabled: true
+    url: application.k8s.localhost
+  springProfiles: kube
+  logLevel: info
+  resources:
+    requests:
+      memory: '256Mi'
+      cpu: '100m'
+    limits:
+      memory: '1024Mi'
+      cpu: '1'
+
+supportservices:
+  monitoring:
+    prometheusEnabled: true
+  nginxproxy:
+    resources:
+      requests:
+        memory: '128Mi'
+        cpu: '100m'
+      limits:
+        memory: '512Mi'
+        cpu: '500m'
+
+images:
+  pullSecret: 
+  app:
+    registry: ghcr.io
+    repository: kostakoff
+    imageName: spring-application-template
+    imageTag: latest
+  nginxproxy:
+    registry: docker.io
+    repository: kostakoff
+    imageName: rocky-base-images
+    imageTag: 8-nginx
+  tests:
+    registry: docker.io
+    repository: kostakoff
+    imageName: rocky-base-images
+    imageTag: 8-default
+
+#### optional variables chapter, for different applications
+
+extraVars:
+  applicationConfig: | 
+    server:
+      port: 8080
+

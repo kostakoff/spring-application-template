@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullName" . }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.app.springProfiles }}
+  LOGGING_LEVEL_ROOT: '{{ .Values.app.logLevel }}'
+  # set combined secrets file
+  SPRING_CONFIG_ADDITIONAL_LOCATION: '/etc/secrets/secrets.properties'
+  JAVA_OPTS: '{{ .Values.app.javaOpts }}'
+  JDEBUG_OPTS: '{{ .Values.app.debug.enabled | ternary .Values.app.debug.settings "" }}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullName" . }}-profile
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  application-kube.yml: |
+{{ tpl .Values.extraVars.applicationConfig . | indent 4 }}
