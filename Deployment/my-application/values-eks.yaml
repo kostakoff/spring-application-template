@@ -1,7 +1,7 @@
 projectName: my
 applicationName: application
 appNamespace: applications
-k8sCluster: k8s.localhost
+k8sCluster: dev-k8s.myltd.lab
 
 replicas: 1
 accountName: default
@@ -14,21 +14,21 @@ app:
   server:
     ingress:
       enabled: true
-      class: 
-    url: application.k8s.localhost
+      class: internal-nginx
+    url: application.apps.dev-k8s.myltd.lab
   springProfiles: kube
   logLevel: info
   resources:
     requests:
-      memory: '256Mi'
+      memory: '128Mi'
       cpu: '100m'
     limits:
-      memory: '1024Mi'
-      cpu: '1'
+      memory: '512Mi'
+      cpu: '500m'
 
 supportservices:
   monitoring:
-    prometheusEnabled: true
+    prometheusEnabled: false
   nginxproxy:
     resources:
       requests:
