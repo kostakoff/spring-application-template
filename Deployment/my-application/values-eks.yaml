@@ -28,7 +28,7 @@ app:
 
 supportservices:
   monitoring:
-    prometheusEnabled: false
+    prometheusEnabled: true
   nginxproxy:
     resources:
       requests:
